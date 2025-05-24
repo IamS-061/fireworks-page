@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Fireworks Show</title>
+  <title>Fireworks</title>
   <style>
     html, body {
       margin: 0;
@@ -11,33 +11,120 @@
       height: 100%;
       background-color: black;
     }
-    #container {
-      width: 100%;
-      height: 100vh;
-      overflow: hidden;
-      position: relative;
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 999;
     }
   </style>
 </head>
 <body>
-  <div id="container"></div>
-  <script type="module">
-    import { Fireworks } from 'https://cdn.jsdelivr.net/npm/fireworks-js@2/dist/fireworks.js';
+  <canvas id="canvas"></canvas>
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
 
-    const container = document.getElementById('container');
-    const fireworks = new Fireworks(container, {
-      hue: { min: 0, max: 360 },
-      rocketsPoint: 50,
-      speed: 3,
-      acceleration: 1.05,
-      friction: 0.95,
-      gravity: 1.5,
-      particles: 50,
-      trace: 3,
-      explosion: 5
+    window.addEventListener("resize", () => {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
     });
 
-    fireworks.start();
+    const fireworks = [];
+    const particles = [];
+
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function Firework() {
+      this.x = w / 2;
+      this.y = h;
+      this.targetX = random(100, w - 100);
+      this.targetY = random(50, h / 2);
+      this.speed = 3;
+      this.angle = Math.atan2(this.targetY - this.y, this.targetX - this.x);
+      this.distance = Math.hypot(this.targetX - this.x, this.targetY - this.y);
+      this.traveled = 0;
+    }
+
+    Firework.prototype.update = function() {
+      const vx = Math.cos(this.angle) * this.speed;
+      const vy = Math.sin(this.angle) * this.speed;
+      this.x += vx;
+      this.y += vy;
+      this.traveled += Math.hypot(vx, vy);
+      if (this.traveled >= this.distance) {
+        for (let i = 0; i < 100; i++) {
+          particles.push(new Particle(this.x, this.y));
+        }
+        return true;
+      }
+      return false;
+    };
+
+    Firework.prototype.draw = function() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+      ctx.fillStyle = "white";
+      ctx.fill();
+    };
+
+    function Particle(x, y) {
+      this.x = x;
+      this.y = y;
+      this.speed = random(1, 5);
+      this.angle = random(0, Math.PI * 2);
+      this.alpha = 1;
+      this.gravity = 0.05;
+    }
+
+    Particle.prototype.update = function() {
+      this.x += Math.cos(this.angle) * this.speed;
+      this.y += Math.sin(this.angle) * this.speed + this.gravity;
+      this.alpha -= 0.01;
+      return this.alpha <= 0;
+    };
+
+    Particle.prototype.draw = function() {
+      ctx.globalAlpha = this.alpha;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+      ctx.fillStyle = "hsl(" + Math.floor(random(0, 360)) + ", 100%, 50%)";
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    };
+
+    function animate() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+      ctx.fillRect(0, 0, w, h);
+
+      if (Math.random() < 0.05) {
+        fireworks.push(new Firework());
+      }
+
+      for (let i = fireworks.length - 1; i >= 0; i--) {
+        if (fireworks[i].update()) {
+          fireworks.splice(i, 1);
+        } else {
+          fireworks[i].draw();
+        }
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        if (particles[i].update()) {
+          particles.splice(i, 1);
+        } else {
+          particles[i].draw();
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
   </script>
 </body>
 </html>
