@@ -21,8 +21,9 @@
 </head>
 <body>
   <div id="container"></div>
-  <script src="https://cdn.jsdelivr.net/npm/fireworks-js@2/dist/fireworks.js"></script>
-  <script>
+  <script type="module">
+    import { Fireworks } from 'https://cdn.jsdelivr.net/npm/fireworks-js@2/dist/fireworks.js';
+
     const container = document.getElementById('container');
     const fireworks = new Fireworks(container, {
       hue: { min: 0, max: 360 },
